@@ -17,9 +17,8 @@ services:
         value: production
 
   # Frontend Site
-  - type: web
+  - type: static
     name: evaluation-frontend
-    env: static
     plan: free
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: client/dist
