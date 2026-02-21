@@ -1,20 +1,21 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+require('dotenv').config();
+const { Pool } = require('pg');
 
-const dbPath = path.resolve(__dirname, 'database.sqlite');
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error(err.message);
-    }
-    console.log('Connected to the database for seeding.');
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('render') ? { rejectUnauthorized: false } : false
 });
 
 const employees = [
-    { name: 'Alice Smith', department: 'Engineering', manager: 'Bob Jones', join_date: '2023-01-15', avatar_url: 'https://i.pravatar.cc/150?u=alice' },
-    { name: 'Bob Jones', department: 'Engineering', manager: 'Charlie Brown', join_date: '2022-05-20', avatar_url: 'https://i.pravatar.cc/150?u=bob' },
-    { name: 'Charlie Brown', department: 'HR', manager: 'David White', join_date: '2021-11-01', avatar_url: 'https://i.pravatar.cc/150?u=charlie' },
-    { name: 'David White', department: 'Marketing', manager: 'Eve Black', join_date: '2020-03-10', avatar_url: 'https://i.pravatar.cc/150?u=david' },
-    { name: 'Eve Black', department: 'Sales', manager: 'Frank Green', join_date: '2019-07-25', avatar_url: 'https://i.pravatar.cc/150?u=eve' }
+    { name: 'YIBELTAL', department: 'MANAGEMENT', manager: 'Company', join_date: '2022-01-01', avatar_url: 'https://i.pravatar.cc/150?u=yibeltal', role: 'manager', password: '' },
+    { name: 'ABEEB KEBEDE', department: 'OPERATOR', manager: 'YIBELTAL', join_date: '2023-01-15', avatar_url: 'https://i.pravatar.cc/150?u=abeeb', role: 'employee', password: '' },
+    { name: 'FANUAEL GIZAW', department: 'OPERATOR', manager: 'YIBELTAL', join_date: '2023-01-15', avatar_url: 'https://i.pravatar.cc/150?u=fanuael', role: 'employee', password: '' },
+    { name: 'BEREKET CHALE', department: 'OPERATOR', manager: 'YIBELTAL', join_date: '2022-01-15', avatar_url: 'https://i.pravatar.cc/150?u=bereket', role: 'employee', password: '' },
+    { name: 'ISMAEL KASIM', department: 'OPERATOR', manager: 'YIBELTAL', join_date: '2023-01-15', avatar_url: 'https://i.pravatar.cc/150?u=ismael', role: 'employee', password: '' },
+    { name: 'HABTAMU ENDASHAW', department: 'OPERATOR', manager: 'YIBELTAL', join_date: '2023-01-15', avatar_url: 'https://i.pravatar.cc/150?u=habtamu', role: 'employee', password: '' },
+    { name: 'SEWENET AYALEW', department: 'OPERATOR', manager: 'YIBELTAL', join_date: '2023-01-15', avatar_url: 'https://i.pravatar.cc/150?u=sewenet', role: 'employee', password: '' },
+    { name: 'ABREHAM AMARE', department: 'OPERATOR', manager: 'YIBELTAL', join_date: '2023-01-15', avatar_url: 'https://i.pravatar.cc/150?u=abreham', role: 'employee', password: '' },
+    { name: 'SIRAJ KHELIL', department: 'OPERATOR', manager: 'YIBELTAL', join_date: '2023-01-15', avatar_url: 'https://i.pravatar.cc/150?u=siraj', role: 'employee', password: '' }
 ];
 
 const criteria = [
@@ -30,24 +31,77 @@ const criteria = [
     { name: 'Leadership', max_score: 5, weight: 1 }
 ];
 
-db.serialize(() => {
-    // Clear existing data (optional, but good for seeding)
-    // db.run("DELETE FROM employees");
-    // db.run("DELETE FROM criteria");
+const seed = async () => {
+    try {
+        console.log('Initializing tables for seeding...');
+        // Drop and Recreate for schema sync
+        await pool.query("DROP TABLE IF EXISTS work_plans CASCADE");
+        await pool.query("DROP TABLE IF EXISTS evaluations CASCADE");
+        await pool.query("DROP TABLE IF EXISTS employees CASCADE");
+        await pool.query("DROP TABLE IF EXISTS criteria CASCADE");
 
-    const stmtEmployee = db.prepare("INSERT INTO employees (name, department, manager, join_date, avatar_url) VALUES (?, ?, ?, ?, ?)");
-    employees.forEach(emp => {
-        stmtEmployee.run(emp.name, emp.department, emp.manager, emp.join_date, emp.avatar_url);
-    });
-    stmtEmployee.finalize();
+        await pool.query(`CREATE TABLE employees (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            department VARCHAR(255),
+            manager VARCHAR(255),
+            join_date DATE,
+            avatar_url TEXT,
+            role VARCHAR(50) DEFAULT 'employee',
+            password VARCHAR(255) DEFAULT 'password123'
+        )`);
 
-    const stmtCriteria = db.prepare("INSERT INTO criteria (name, max_score, weight) VALUES (?, ?, ?)");
-    criteria.forEach(crit => {
-        stmtCriteria.run(crit.name, crit.max_score, crit.weight);
-    });
-    stmtCriteria.finalize();
+        await pool.query(`CREATE TABLE criteria (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            max_score INTEGER DEFAULT 5,
+            weight INTEGER DEFAULT 1
+        )`);
 
-    console.log('Database seeded successfully.');
-});
+        await pool.query(`CREATE TABLE evaluations (
+            id SERIAL PRIMARY KEY,
+            employee_id INTEGER REFERENCES employees(id),
+            date TIMESTAMP,
+            total_score DECIMAL,
+            notes TEXT,
+            scores_json TEXT
+        )`);
 
-db.close();
+        await pool.query(`CREATE TABLE work_plans (
+            id SERIAL PRIMARY KEY,
+            employee_id INTEGER REFERENCES employees(id),
+            title VARCHAR(255) NOT NULL,
+            type VARCHAR(50),
+            target_value DECIMAL,
+            metric VARCHAR(50),
+            achieved_value DECIMAL DEFAULT 0,
+            start_date DATE,
+            due_date DATE,
+            status VARCHAR(50) DEFAULT 'Pending'
+        )`);
+
+        // Seed Employees
+        for (const emp of employees) {
+            await pool.query(
+                "INSERT INTO employees (name, department, manager, join_date, avatar_url, role, password) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                [emp.name, emp.department, emp.manager, emp.join_date, emp.avatar_url, emp.role, emp.password]
+            );
+        }
+
+        // Seed Criteria
+        for (const crit of criteria) {
+            await pool.query(
+                "INSERT INTO criteria (name, max_score, weight) VALUES ($1, $2, $3)",
+                [crit.name, crit.max_score, crit.weight]
+            );
+        }
+
+        console.log('Database seeded successfully.');
+    } catch (err) {
+        console.error('Error seeding database:', err);
+    } finally {
+        pool.end();
+    }
+};
+
+seed();

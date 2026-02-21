@@ -40,7 +40,7 @@ const HistoryChart = ({ data }) => {
                             dy={10}
                         />
                         <YAxis
-                            domain={[0, 100]}
+                            domain={[0, 120]}
                             axisLine={false}
                             tickLine={false}
                             tick={{ fill: '#6B7280', fontSize: 12 }}

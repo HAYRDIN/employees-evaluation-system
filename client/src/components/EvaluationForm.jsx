@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const EvaluationForm = ({ employee, onSave, onScoreUpdate }) => {
     const [criteria, setCriteria] = useState([]);
@@ -23,7 +23,7 @@ const EvaluationForm = ({ employee, onSave, onScoreUpdate }) => {
 
     const fetchCriteria = async () => {
         try {
-            const res = await axios.get('/api/criteria');
+            const res = await api.get('/api/criteria');
             setCriteria(res.data.data);
             // Initialize scores
             const initialScores = {};

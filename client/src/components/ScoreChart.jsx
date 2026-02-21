@@ -2,12 +2,15 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Label } from 'recharts';
 
 const ScoreChart = ({ score }) => {
+    const normalizedScore = score > 100 ? 100 : score;
+    const overperformance = score > 100 ? score - 100 : 0;
+
     const data = [
-        { name: 'Score', value: score },
-        { name: 'Remaining', value: 100 - score },
+        { name: 'Base', value: normalizedScore },
+        { name: 'Remaining', value: Math.max(0, 100 - score) },
     ];
 
-    const COLORS = ['#2563EB', '#E5E7EB']; // Blue and Gray
+    const COLORS = score > 100 ? ['#10B981', '#E5E7EB'] : ['#2563EB', '#E5E7EB']; // Green if >100%, else Blue
 
     return (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">

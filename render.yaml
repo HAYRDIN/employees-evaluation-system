@@ -1,0 +1,38 @@
+services:
+  # Backend Service
+  - type: web
+    name: evaluation-backend
+    env: node
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: evaluation-db
+          property: connectionString
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+
+  # Frontend Site
+  - type: web
+    name: evaluation-frontend
+    env: static
+    plan: free
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: client/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: evaluation-backend
+          property: host
+    routingRules:
+      - route: /*
+        rewritePath: /index.html
+
+databases:
+  - name: evaluation-db
+    plan: free
