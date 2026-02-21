@@ -28,9 +28,10 @@ services:
           type: web
           name: evaluation-backend
           property: host
-    routingRules:
-      - route: /*
-        rewritePath: /index.html
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
 databases:
   - name: evaluation-db
