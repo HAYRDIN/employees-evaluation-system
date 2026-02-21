@@ -16,9 +16,10 @@ services:
       - key: NODE_ENV
         value: production
 
-
-staticSites:
-  - name: evaluation-frontend
+  # Frontend Site
+  - type: web
+    name: evaluation-frontend
+    env: static
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: client/dist
     envVars:
